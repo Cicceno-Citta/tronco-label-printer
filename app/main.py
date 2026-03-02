@@ -1,9 +1,10 @@
-import csv
 import logging
 import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from .core import settings
 
@@ -21,15 +22,28 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
+
+
+class PrintLabelRequest(BaseModel):
+    mynumber: str
+    name: str
+
 
 @app.post("/print-label")
-async def print_label(mynumber: str, name: str, kana: str):
+async def print_label(request: PrintLabelRequest):
     output_folder = settings.OUTPUT_FOLDER
-    file_path = os.path.join(output_folder, f"{mynumber}.csv")
+    file_path = os.path.join(output_folder, f"{request.mynumber}.csv")
     if os.path.exists(file_path):
         return {"message": "Label already exists"}
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write(f"{mynumber},{name},{kana}\n")
+        f.write(f"{request.mynumber}, {request.name}\n")
     return {"message": "Label queued for printing successfully"}
 
 
