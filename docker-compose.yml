@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3
     ports:
       - "80:80"
       - "443:443"
@@ -30,9 +30,20 @@ services:
       - ${OUTPUT_FOLDER:-./data}:/data
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+
+      # HTTP router
+      - "traefik.http.routers.app-http.rule=Host(`${DOMAIN}`) || PathPrefix(`/`)"
+      - "traefik.http.routers.app-http.entrypoints=web"
+      - "traefik.http.routers.app-http.service=app"
+
+      # HTTPS router
+      - "traefik.http.routers.app-https.rule=Host(`${DOMAIN}`) || PathPrefix(`/`)"
+      - "traefik.http.routers.app-https.entrypoints=websecure"
+      - "traefik.http.routers.app-https.tls=true"
+      - "traefik.http.routers.app-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.app-https.service=app"
+
+      # Backend service
       - "traefik.http.services.app.loadbalancer.server.port=80"
     networks:
       - traefik-network
